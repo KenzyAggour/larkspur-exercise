@@ -11,6 +11,11 @@ teammate, starting with `- `. Commit the file once. Nobody else changes it.
 The review reads these names. Nothing else comes off the list. Your team still
 decides in the moment who does what.
 
-- <Name>
-- <Name>
-- <Name>
+- Kenzy Aggour
+- Manish Bhadri
+- Milena Nikolajeva
+- Hana Seif
+- Mohamed Ashraf
+- Farida Yasser
+- Tim Sillars
+- Farah Ibrahim
