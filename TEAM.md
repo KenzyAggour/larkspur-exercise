@@ -20,3 +20,4 @@ decides in the moment who does what.
 - Tim Sillars
 - Farah Ibrahim
 - Edward Bridger
+- Osei Boffah
