@@ -52,56 +52,6 @@ EXTRA_TOOLS: List[Dict[str, Any]] = [
             ]
         }
     },
-    {
-        "name": "fare_rules",
-     "description": (
-    "Use this tool when a customer asks WHY a Larkspur fare or disruption "
-    "rule applies, such as why they are not entitled to a hotel, meal, "
-    "refund or rebooking. Searches the written Handbook and returns the "
-    "relevant policy sections. It explains the rules but does not evaluate "
-    "a specific booking; use check_policy for booking eligibility."
-),
-
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "topic": {
-                    "type": "string",
-                    "description": (
-                        "One keyword for the rule, such as hotel, meal, refund, "
-                        "rebooking, goodwill, basic or group."
-                    )
-                }
-            },
-            "required": ["topic"]
-        }
-    }, 
-    {
-        "name": "next_available_day",
-       "description": (
-    "Use this tool when a customer asks when they can next travel or "
-    "when the earliest available flight is. Searches for the earliest "
-    "date with an open seat between the specified origin and destination. "
-    "Requires origin, destination and travel date; cabin is optional. "
-    "Checks availability for one passenger and returns a date in YYYY-MM-DD format."
-),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "origin": {"type": "string"},
-                "dest": {"type": "string"},
-                "date": {
-                    "type": "string",
-                    "description": "YYYY-MM-DD"
-                },
-                "cabin": {
-                    "type": "string",
-                    "default": "Y"
-                }
-            },
-            "required": ["origin", "dest", "date"]
-        }
-    }
 ]
 
 # Fare rules Handbook location
@@ -131,35 +81,10 @@ def care_entitlements(pnr, cause_code, status, delay_minutes,
         "explainer": policy["explainer"],
     }
 
-def fare_rules(topic: str) -> Dict[str, Any]:
-    """Return the Handbook sections that mention the topic, or say none do."""
-    text = HANDBOOK.read_text(encoding="utf-8")
-    sections = ["###" + s for s in text.split("###")[1:]]
-    keyword = topic.strip().lower()
-
-    matches = [
-        s.strip()
-        for s in sections
-        if keyword and keyword in s.lower()
-    ]
-
-    if not matches:
-        return {
-            "found": False,
-            "message": "Not found in the Handbook: " + topic
-        }
-
-    return {
-        "found": True,
-        "source": "Handbook v14.3",
-        "sections": matches
-    }
 
 # ✏️ Build 2, step 2.1: schemas for the tools you add
 LOCAL_TOOLS: Dict[str, Any] = {  
     "care_entitlements": care_entitlements,
-    "fare_rules": fare_rules,
-    "next_available_day": next_available_day,
       
     }         # ✏️ Build 2, step 2.1: the functions behind them
 
@@ -225,7 +150,7 @@ def run_agent(pnr: str, last_name: str, message: str) -> str:            # ✏�
 def tool_list() -> List[Dict[str, Any]]:                   # ✏️ Build 2, step 2.2
     """Given. Exactly what Claude is offered on every turn; run.py --show-tools
     prints this list."""
-    return build_tools() + EXTRA_TOOLS
+    return build_tools() + EXTRA_TOOLS + mcp_client.tools()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
