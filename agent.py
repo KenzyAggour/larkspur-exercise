@@ -14,8 +14,7 @@ from typing import Any, Dict, List
 from support import (MODEL, SYSTEM_PROMPT, call_local, execute_tool, mcp_client,
                      new_session, next_available_day, record_tool_result,
                      runtime_preamble)
-from support.tools import care_entitlements
-
+from support.tools import check_policy
 
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
@@ -108,6 +107,29 @@ EXTRA_TOOLS: List[Dict[str, Any]] = [
 # Fare rules Handbook location
 HANDBOOK = Path(__file__).parent / "data" / "americas" / "fare_rules_excerpt.md"
 
+def care_entitlements(pnr, cause_code, status, delay_minutes,
+                     wait_minutes_for_alternative=None,
+                     chosen_option_id=None):
+    """Return the customer's resolved meal, hotel and ground entitlements."""
+
+    policy = check_policy(
+        pnr=pnr,
+        cause_code=cause_code,
+        delay_minutes=delay_minutes,
+        status=status,
+        wait_minutes_for_alternative=wait_minutes_for_alternative,
+        chosen_option_id=chosen_option_id,
+    )
+
+    if "error" in policy:
+        return policy
+
+    return {
+        "policy_row_id": policy["policy_row_id"],
+        "policy_version": policy["policy_version"],
+        "care": policy["care"],
+        "explainer": policy["explainer"],
+    }
 
 def fare_rules(topic: str) -> Dict[str, Any]:
     """Return the Handbook sections that mention the topic, or say none do."""
