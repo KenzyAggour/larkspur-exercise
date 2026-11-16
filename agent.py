@@ -68,15 +68,14 @@ def run_agent(pnr: str, last_name: str, message: str) -> str:            # ✏�
     answer = ""
     turns = 1
     while response.stop_reason == "tool_use" and turns < MAX_TOOL_CALLS:
-        messages.append({"role": "assistant", "content": text_of(response)})
+        messages.append({"role": "assistant", "content": response.content})
         messages.append({"role": "user", "content": tool_results(response)})
-        answer = text_of(response)
         response = client.messages.create(
             model=MODEL, max_tokens=4096, system=runtime_preamble() + SYSTEM_PROMPT + TONE_ADDENDUM,
             thinking={"type": "adaptive"}, tools=tools, messages=messages,
         )
         turns += 1
-
+    answer = text_of(response)
     return answer
 
 
@@ -113,7 +112,7 @@ def build_tools() -> List[Dict[str, Any]]:                 # ✏️ Build 1, ste
             "description": (
                 "Look up a Larkspur or Larkspur Link flight's current OpsFeed status for "
                 "one local date: status, delay minutes, and cause. Use this before telling "
-                "a customer anything about a flight's timing; never state it from memory."
+                "a customer anything about a flight's timing; never state it from memory. Make sure date is in the format YYYY-MM-DD."
             ),
             "input_schema": {
                 "type": "object",
@@ -126,7 +125,7 @@ def build_tools() -> List[Dict[str, Any]]:                 # ✏️ Build 1, ste
         },
         {
             "name": "search_alternatives",
-            "description": "search",
+            "description": "Called after check policy to search for alternative flights for flights that are cancelled or delayed using the pnr to get alternative flight options",
             "input_schema": {
                 "type": "object",
                 "properties": {"pnr": {"type": "string"}},
@@ -159,7 +158,7 @@ def build_tools() -> List[Dict[str, Any]]:                 # ✏️ Build 1, ste
         },
         {
             "name": "hold_seat",
-            "description": "Place a 15-minute hold on one alternative. Reversible. It simply expires.",
+            "description": "Place a 15-minute hold on one seat. It is a Reversible action and it simply expires.",
             "input_schema": {
                 "type": "object",
                 "properties": {"option_id": {"type": "string"}, "pnr": {"type": "string"}},
