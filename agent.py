@@ -9,16 +9,137 @@ Where you edit:   grep -n '✏' agent.py   (six marks, one per place)
 Steps and gates:  https://anthropicpartnerbasecamp.bts.com/
 """
 from __future__ import annotations
+from pathlib import Path
 from typing import Any, Dict, List
 from support import (MODEL, SYSTEM_PROMPT, call_local, execute_tool, mcp_client,
                      new_session, next_available_day, record_tool_result,
                      runtime_preamble)
+from support.tools import care_entitlements
+
 
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
 TONE_ADDENDUM = ""                       # ✏️ Build 4, step 4.1, intelligence goal
-EXTRA_TOOLS: List[Dict[str, Any]] = []   # ✏️ Build 2, step 2.1: schemas for the tools you add
-LOCAL_TOOLS: Dict[str, Any] = {}         # ✏️ Build 2, step 2.1: the functions behind them
+   
+EXTRA_TOOLS: List[Dict[str, Any]] = [
+    {
+        "name": "care_entitlements",
+        "description": (
+    "Use this tool when a customer asks what meal, hotel, or ground "
+    "transportation assistance they qualify for during a flight "
+    "disruption. It retrieves the booking and applies Larkspur's "
+    "policy to determine the customer's specific care entitlements. "
+    "Provide the PNR, disruption cause, flight status and delay minutes. "
+    "It returns the eligible care benefits and policy explanation."
+),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pnr": {"type": "string"},
+                "cause_code": {"type": "string"},
+                "status": {"type": "string"},
+                "delay_minutes": {"type": "integer"},
+                "wait_minutes_for_alternative": {"type": "integer"},
+                "chosen_option_id": {
+                    "type": "string",
+                    "description": "ID of the selected alternative flight, if one has been chosen."
+                }
+            },
+            "required": [
+                "pnr",
+                "cause_code",
+                "status",
+                "delay_minutes"
+            ]
+        }
+    },
+    {
+        "name": "fare_rules",
+     "description": (
+    "Use this tool when a customer asks WHY a Larkspur fare or disruption "
+    "rule applies, such as why they are not entitled to a hotel, meal, "
+    "refund or rebooking. Searches the written Handbook and returns the "
+    "relevant policy sections. It explains the rules but does not evaluate "
+    "a specific booking; use check_policy for booking eligibility."
+),
+
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": (
+                        "One keyword for the rule, such as hotel, meal, refund, "
+                        "rebooking, goodwill, basic or group."
+                    )
+                }
+            },
+            "required": ["topic"]
+        }
+    }, 
+    {
+        "name": "next_available_day",
+       "description": (
+    "Use this tool when a customer asks when they can next travel or "
+    "when the earliest available flight is. Searches for the earliest "
+    "date with an open seat between the specified origin and destination. "
+    "Requires origin, destination and travel date; cabin is optional. "
+    "Checks availability for one passenger and returns a date in YYYY-MM-DD format."
+),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "origin": {"type": "string"},
+                "dest": {"type": "string"},
+                "date": {
+                    "type": "string",
+                    "description": "YYYY-MM-DD"
+                },
+                "cabin": {
+                    "type": "string",
+                    "default": "Y"
+                }
+            },
+            "required": ["origin", "dest", "date"]
+        }
+    }
+]
+
+# Fare rules Handbook location
+HANDBOOK = Path(__file__).parent / "data" / "americas" / "fare_rules_excerpt.md"
+
+
+def fare_rules(topic: str) -> Dict[str, Any]:
+    """Return the Handbook sections that mention the topic, or say none do."""
+    text = HANDBOOK.read_text(encoding="utf-8")
+    sections = ["###" + s for s in text.split("###")[1:]]
+    keyword = topic.strip().lower()
+
+    matches = [
+        s.strip()
+        for s in sections
+        if keyword and keyword in s.lower()
+    ]
+
+    if not matches:
+        return {
+            "found": False,
+            "message": "Not found in the Handbook: " + topic
+        }
+
+    return {
+        "found": True,
+        "source": "Handbook v14.3",
+        "sections": matches
+    }
+
+# ✏️ Build 2, step 2.1: schemas for the tools you add
+LOCAL_TOOLS: Dict[str, Any] = {  
+    "care_entitlements": care_entitlements,
+    "fare_rules": fare_rules,
+    "next_available_day": next_available_day,
+      
+    }         # ✏️ Build 2, step 2.1: the functions behind them
 
 
 def text_of(response) -> str:
@@ -222,3 +343,6 @@ def build_tools() -> List[Dict[str, Any]]:                 # ✏️ Build 1, ste
             },
         },
     ]
+
+
+
