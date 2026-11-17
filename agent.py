@@ -18,7 +18,16 @@ from support.tools import check_policy
 
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
-TONE_ADDENDUM = ""                       # ✏️ Build 4, step 4.1, intelligence goal
+TONE_ADDENDUM = """
+When a customer is upset, acknowledge their frustration before explaining the resolution.
+Remain calm and respectful, never mirror abusive language or argue. Explain what was
+verified, what options are available under policy, and the next concrete step. Do not
+promise anything the tools or policy do not support.
+If the customer uses abusive language and threatens legal action, acknowledge the
+complaint once, then stop normal disruption handling and escalate to a human. Promise
+nothing, do not provide a normal entitlements rundown or refund pathway, and do not
+call issue_voucher or confirm_rebooking.
+"""                  # ✏️ Build 4, step 4.1, intelligence goal
    
 EXTRA_TOOLS: List[Dict[str, Any]] = [
     {

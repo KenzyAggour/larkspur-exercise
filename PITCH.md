@@ -12,7 +12,7 @@ Next: Improve tool selection and reduce unnecessary tool calls and token usage w
 
 Still broken: The `care_entitlements` tool was not selected during the initial Build 2.1 probe, although its registration worked. The routing issue required further description and probe improvements.
 
-Lever: <cost | speed | intelligence>
+Lever: intelligence
 
 ## Priya asked
 
